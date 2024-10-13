@@ -1474,3 +1474,621 @@ public class VideoServiceImpe implements VideoService {
 6. 게시물 작성
 7. 게시물 수정
 8. 게시물 삭제
+
+<br>
+
+● React - Archive<br><br>
+
+1. ArchiveBoardSection.js
+~~~jsx
+import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom'; 
+import axios from "axios";
+
+const ArchiveBoardSection = () => {
+    const navigate = useNavigate();
+
+    const [vrList, setVrList] = useState([]);
+    const [maxDate, setMaxDate] = useState(0);
+    const [minDate, setMinDate] = useState(0);
+
+    const [yearsRange, setYearsRange] = useState([]);
+    const [selectYear, setSelectYear] = useState(2020);
+    const [activeFilter, setActiveFilter] = useState('all');
+
+
+    const [page, setPage] = useState({
+        startPage: 1,
+        endPage: 0,
+        prev: false,
+        next: false,
+        total: 0,
+        pagingInfo : {
+            pageNum: 1,
+            amount: 9
+        }
+        
+    });
+
+    useEffect(() => {
+        fetchData(1);
+    }, [selectYear,activeFilter]);
+
+    // 연도 범위 생성
+    useEffect(() => {
+        const years = [];
+        for (let i = minDate; i <= maxDate; i++) {
+            years.push(i.toString());
+        }
+        setYearsRange(years);
+    }, [maxDate]);
+    
+
+    // 데이터 로드 
+    const fetchData = (pageNum) => {
+        let url = activeFilter === 'all'
+            ? '/archive/archiveAllList'
+            : `/archive/getArchiveListByYear?thisYear=${selectYear}`;
+        axios.get(url, { params: { pageNum } })
+            .then(response => {
+                const { data } = response;
+                updatePageData(data, pageNum);              
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    };
+
+    // 페이지 데이터 업데이트
+    const updatePageData = (data, pageNum) => {
+
+        setPage({
+            startPage: data.page.startPage,
+            endPage: data.page.endPage,
+            prev: data.page.prev,
+            next: data.page.next,
+            total: data.page.total,
+            pagingInfo:{
+                pageNum: pageNum,
+                amount: 9
+            }
+        });
+        setVrList(data.list);
+        setMaxDate(data.maxDate);
+        setMinDate(data.minDate);
+    };
+
+    // 연도 선택 핸들러
+    const handleYearClick = (yearClicked) => {
+        setSelectYear(yearClicked);
+        setActiveFilter('year');
+        setPage(prevState => ({
+            ...prevState,
+            pagingInfo: {
+                ...prevState.pagingInfo,
+                pageNum: 1
+            }
+        }));          
+    };
+
+    // 아카이브 상세 페이지로 이동
+    const archiveDetailClick = (boardNo) => {
+        navigate(`/board/archive/detail/${boardNo}`, { state: { boardNo } });
+    };
+
+    return (
+        <>
+            <section className="section">
+                <div className="container">
+                    <div className="row justify-content-center">
+                        <div className="col-12 filters-group-wrap">
+                            <div className="filters-group">
+                                <ul className="container-filter list-inline mb-0 filter-options text-center">
+                                    <li className={`list-inline-item categories-name border text-dark rounded ${activeFilter === 'all' ? 'active' : ''}`}
+                                        onClick={() => { setActiveFilter('all') }} data-group="all">All</li>
+                                    {yearsRange.map(year => (
+                                        <li className={`list-inline-item categories-name border text-dark rounded ${selectYear === year && activeFilter === 'year' ? 'active' : ''}`}
+                                            onClick={() => {handleYearClick(year)}}
+                                            key={year}>{year}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="grid" className="row">
+                        {vrList.map(vr => (
+                            <div className="col-lg-4 col-md-6 col-12 mt-4 pt-2 picture-item" key={vr.boardNo}>
+                                <div className="card blog border-0 work-container work-primary work-classic shadow rounded-md overflow-hidden">
+                                    <img src={vr.boardFile ? `/asset/${vr.boardFile}` : `/asset/noimage.jpg`} className="img-fluid work-image" alt="" style={{ width: '100%', height: 'auto', aspectRatio: '356 / 267' }}/>
+                                    <div className="card-body" style={{margin:0}}>
+                                        <div className="content">
+                                            <a href="#" className="badge badge-link bg">{vr.boardWriteYear}</a>
+                                            <h5 className="mt-3"><a href="#" className="text-dark title">{vr.boardTitle}</a></h5>
+                                            <p className="text-muted" style={{ display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', maxWidth: '100%' }}>{vr.boardContent}</p>
+                                            <a className="link h6" 
+                                                style={{ cursor: 'pointer' }} 
+                                                onClick={() => archiveDetailClick(vr.boardNo)}>
+                                                Read More <i className="uil uil-angle-right-b align-middle"></i>
+                                            </a>
+                                        </div>                                        
+                                    </div>
+
+                                       <div className="author">
+                                        <small className="date"><i className="uil uil-calendar-alt"></i> {new Date(vr.regDate).toLocaleDateString()}</small>
+                                    </div>                                 
+                                </div>
+                            </div>                            
+                        ))}
+                    </div>
+                </div>
+                
+                <div className="col-12 mt-4">
+                    <ul className="pagination justify-content-center mb-0">
+                        {page.prev && (
+                            <li className="page-item"><button className="page-link" onClick={() => page.prev && fetchData(page.startPage - 1)} aria-label="Previous">Prev</button></li>
+                        )}
+                        {Array.from({ length: (page.endPage - page.startPage + 1) }, (_, i) => page.startPage + i).map(pageNum => (
+                            <li className={`page-item ${pageNum === page.pagingInfo.pageNum ? 'active' : ''}`} key={pageNum}>
+                                <button className="page-link" onClick={() => fetchData(pageNum)}>{pageNum}</button>
+                            </li>
+                        ))}
+                        {page.next && (
+                            <li className="page-item"><button className="page-link" onClick={() => page.next && fetchData(page.endPage + 1)} aria-label="Next">Next</button></li>
+                        )}
+                    </ul>
+                </div>
+            </section>
+        </>
+    );
+}
+
+export default ArchiveBoardSection;
+~~~
+
+<br>
+
+2. ArchiveDetailSection.js
+~~~jsx
+import React, { useEffect, useState } from "react";
+import { useLocation } from 'react-router-dom';
+import { useParams } from "react-router-dom";
+
+const ArchiveDetailSection = () => {
+    let {boardNo} = useParams();
+
+    const [board, setBoard] = useState({
+        boardNo: 0,
+        boardTitle: "",
+        boardContent: "",
+        boardFile: ""
+    });
+
+    useEffect(() => {
+        if (boardNo) {
+            fetch(`http://localhost:8080/archive/detail/${boardNo}`)
+                .then(response => response.json())
+                .then(data => {
+                    setBoard({
+                        boardNo: data.boardNo,
+                        boardTitle: data.boardTitle,
+                        boardContent: data.boardContent,
+                        boardFile: data.boardFile
+                    });
+                })
+                .catch(error => console.log('Error fetching data:', error));
+        }
+    }, [boardNo]); // boardNo를 종속성 배열에 추가
+
+    return(
+        <>
+            <section className="bg-half">
+                <div className="container">
+                    <div className="row justify-content-center">
+                        <div className="col-lg-8 col-md-10">
+                            <div className="section-title">
+                                <div className="text-center">
+                                    <h4 className="title mb-4">{board.boardTitle}</h4> 
+                                    <div id="panorama" 
+                                        style={{
+                                            width:"100%", 
+                                            height: 'auto',
+                                            aspectRatio: '356 / 267',                                      
+                                            backgroundSize: "cover",
+                                            backgroundPosition: "center",
+                                            backgroundImage: board.boardFile ? `url(/asset/${board.boardFile})` : `url(/asset/noimage.jpg)`
+                                        }}></div>
+                                </div>
+                                <p className="text-muted mb-0 mt-4">{board.boardContent}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </>
+    );
+}
+
+export default ArchiveDetailSection;
+~~~
+
+<br>
+
+● React - Video<br><br>
+
+1. VideoBoardSection.js
+~~~jsx
+import React, { useState } from "react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom"; 
+import axios from "axios";
+
+const VideoSection = () => {
+
+    const navigate = useNavigate();
+
+
+    const videoDetailClick = (boardNo) => {
+        navigate(`/board/video/detail/${ boardNo }`, { state: { boardNo } });
+    };
+
+    const [page, setPage] = useState({
+        startPage: 1,
+        endPage: 0,
+        prev: false,
+        next: false,
+        total: 0,
+        pagingInfo: {
+            pageNum: 1,
+            amount: 0
+        }
+    });
+
+
+    const [VideoList, setVideoList] = useState([]);
+
+    useEffect(() => {
+        axiosPageData(page.pagingInfo.pageNum);
+    }, []);
+
+    const axiosPageData = (pageNum) => {
+
+        const amount = 9;
+
+        axios.get('/video/videoAllList?', {
+            params : {
+                pageNum : pageNum,
+                amount : amount
+            }
+        })
+            .then(response => {
+                const { data } = response;
+                setPage({
+                    startPage: data.page.startPage,
+                    endPage: data.page.endPage,
+                    prev: data.page.prev,
+                    next: data.page.next,
+                    total: data.page.total,
+                    pagingInfo: {
+                        pageNum: data.page.pagingInfo.pageNum,
+                        amount: data.page.pagingInfo.amount
+                    }
+                });
+                setVideoList(data.list);
+            })
+            .catch(error => {
+                console.log('Error fetching data:', error);
+                console.error(error.response);
+            });
+    };
+
+
+
+
+
+
+    function getYouTubeEmbedUrl(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+      
+        if (match && match[2].length === 11) {          
+          return `https://img.youtube.com/vi/${match[2]}/0.jpg`;
+        }
+      
+        return url; 
+    }
+
+
+    return (
+        <section className="section">
+            <div className="container">
+                <div className="row">
+                    {VideoList.map(videoList => (
+                        <div className="col-lg-6 col-12 mb-4 pb-2" key={videoList.boardNo}>
+                            <div className="card blog blog-primary rounded border-0 shadow overflow-hidden">
+                                <div className="row align-items-center g-0">
+                                    <div className="col-md-6">
+                                        <img className="img-fluid" alt=""
+                                            width="100%"
+                                            src={getYouTubeEmbedUrl(videoList.boardFile)}
+                                        ></img>
+                                        <div className="overlay"></div>
+                                        <div className="author">
+                                            <small className="date"><i className="uil uil-calendar-alt"></i> {new Date(videoList.regDate).toLocaleDateString()}</small>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="card-body content">
+                                            <h5><a href="" className="card-title title text-dark" onClick={()=> videoDetailClick(videoList.boardNo)}>{videoList.boardTitle}</a></h5>
+                                            <p className="text-muted mb-0"                                            
+                                                style={{
+                                                    display: '-webkit-box',
+                                                    WebkitLineClamp: '2',
+                                                    WebkitBoxOrient: 'vertical',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'normal',
+                                                    maxWidth: '100%' 
+                                                }}>                                           
+                                            
+                                            {videoList.boardContent}</p>
+                                            <div className="post-meta d-flex justify-content-between mt-3">
+                                                <ul className="list-unstyled mb-0">
+                                                    <li className="list-inline-item me-2 mb-0"><a className="text-muted like"><i className="uil uil-eye me-1"></i>{videoList.viewCount}</a></li>
+                                                </ul>
+                                                <a className="text-muted readmore" style={{cursor: "pointer"}} onClick={()=> videoDetailClick(videoList.boardNo)}>Read More <i className="uil uil-angle-right-b align-middle"></i></a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> 
+                    ))}
+                </div>
+
+                {/* <!-- PAGINATION START --> */}
+                <div className="col-12">
+                    <ul className="pagination justify-content-center mb-0">
+                        <li className="page-item"><a className="page-link" onClick={()=>{ page.prev && axiosPageData(page.startPage-1)}} style={{ cursor: 'pointer' }} aria-label="Previous">Prev</a></li>
+                            {Array.from({ length: (page.endPage - page.startPage + 1) }, (_, i) => page.startPage + i).map(pageNum => (
+                            <li className={`page-item ${pageNum === page.pagingInfo.pageNum ? 'active' : ''}`} key={pageNum}><a className="page-link" style={{ cursor: 'pointer' }} onClick={() => {axiosPageData(pageNum)}}>{pageNum}</a></li>
+                            ))}
+                        <li className="page-item"><a className="page-link" onClick={()=>{ page.next && axiosPageData(page.endPage+1)}} style={{ cursor: 'pointer' }} aria-label="Next">Next</a></li>
+                    </ul>
+                </div>{/* <!--end col--> */}
+                {/* <!-- PAGINATION END -- */}
+
+
+
+            </div>{/* container */}
+      </section> //section
+    );
+}
+export default VideoSection;
+~~~
+
+<br>
+
+2. VideoDetailSection.js
+~~~jsx
+import React from "react";
+import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { useEffect } from "react";
+
+const VideoDetailSection = () => {
+    let {boardNo} = useParams();
+
+    const [board, setBoard] = useState({
+        boardNo: 0,
+        boardTitle: "",
+        boardContent: "",
+        boardFile: ""
+    });
+
+    useEffect(() => {
+        if (boardNo) {
+            fetch(`http://localhost:8080/video/detail/${boardNo}`)
+                .then(response => response.json())
+                .then(data => {
+
+                    const videoId = new URL(data.boardFile).searchParams.get("v");
+                    const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+
+                    setBoard({
+                        boardNo: data.boardNo,
+                        boardTitle: data.boardTitle,
+                        boardContent: data.boardContent,
+                        boardFile: embedUrl
+                    });
+                })
+                .catch(error => console.log('Error fetching data:', error));
+        }
+    }, []); 
+
+
+    return(
+        <section className="bg-half">
+            <div className="container">
+                <div className="row justify-content-center">
+                    <div className="col-lg-8 col-md-10">
+                        <div className="section-title">
+                            <div className="text-center">
+                                <h4 className="title mb-4">{board.boardTitle}</h4>
+                                <iframe width="100%" height="500px" src={board.boardFile} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+                            </div>
+                            <p className="text-muted mb-0 mt-4">{board.boardContent}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>                          
+        </section>            
+    )
+}
+
+export default VideoDetailSection;
+~~~
+
+<br>
+
+● React - Search<br><br>
+
+1. SearchBoardSection.js
+~~~jsx
+import React, {useEffect, useState} from 'react';
+import axios from 'axios';
+import { useLocation } from 'react-router-dom';
+import { useNavigate } from "react-router-dom"; 
+import { useParams } from 'react-router-dom';
+
+const SearchBoardSection = (searchInfo, pageNum) => {
+    const navigate = useNavigate();
+    let [boardList, setBoardList] = useState({list:[]});
+
+    let {searchQuery} = useParams();
+
+    const boardDetailClick = (board) => {
+        let boardNo = board.boardNo;
+        switch(board.sectionNo){
+            case 2 : 
+                navigate(`/board/archive/detail/${ boardNo }`, { state: { boardNo } });
+                break;
+            case 3 : 
+                navigate(`/board/video/detail/${ boardNo }`, { state: { boardNo } });
+                break;
+        }
+    }
+
+    const imgSpy = (sectionNo) => {
+        switch(sectionNo){
+            case 2 : 
+                return true;
+            case 3 : 
+                return false;
+            case 4 :
+                return true;
+        }
+    }
+
+    function getYouTubeEmbedUrl(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+      
+        if (match && match[2].length === 11) {          
+          return `https://img.youtube.com/vi/${match[2]}/0.jpg`;
+        }
+        return url; 
+    }
+
+    let [page, setPage] = useState({
+        startPage: 1,
+        endPage: 0,
+        prev: false,
+        next: false,
+        total: 0,
+        pagingInfo: {
+          pageNum: 1,
+          amount: 9
+        }
+      });
+
+    useEffect(() => {
+        axiosPageData(page.pagingInfo.pageNum);
+    }, []);
+
+    const axiosPageData = (pageNum) => {
+
+        const amount = 9;
+
+        axios.get('/search', {
+            params : {
+                searchQuery : searchQuery,
+                pageNum : pageNum,
+                amount : amount
+            }
+        })
+            .then(response => {
+                console.log(response.data);
+                setPage({
+                    startPage: response.data.page.startPage,
+                    endPage: response.data.page.endPage,
+                    prev: response.data.page.prev,
+                    next: response.data.page.next,
+                    total: response.data.page.total,
+                    pagingInfo: {
+                        pageNum: response.data.page.pagingInfo.pageNum,
+                        amount: response.data.page.pagingInfo.amount
+                    }
+                });
+                setBoardList({list : response.data.board});
+            })
+            .catch(error => {
+                console.log('Error data:', error);
+            });
+    };
+
+    return(
+        <>
+            <section className="section">
+                <div className="container">
+                    <div className="row justify-content-center">
+                        <div className="col-12 filters-group-wrap">
+                            <div className="filters-group">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="grid" className="row">
+                        {page.total!=0 ? boardList.list.map(board => (
+                            <div className="col-lg-4 col-md-6 col-12 mt-4 pt-2 picture-item" key={board.boardNo}>
+                                <div className="card blog border-0 work-container work-primary work-classic shadow rounded-md overflow-hidden">             
+
+                                { imgSpy(board.sectionNo) ? (
+                                    <img src={board.boardFile ? `/asset/${board.boardFile}` : `/asset/noimage.jpg`} className="img-fluid work-image" alt="" style={{ width: '100%', height: 'auto', aspectRatio: '356 / 267' }}/>
+                                ) : (
+                                    <img
+                                        width="100%"
+                                        src={getYouTubeEmbedUrl(board.boardFile)}
+                                    ></img>                                    
+                                )
+                                }
+                                    <div className="card-body" style={{margin:0}}>
+                                        <div className="content">
+                                            <a href=" " className="badge badge-link bg">{board.boardWriteYear}</a>
+                                            <h5 className="mt-3"><a className="text-dark title">{board.boardTitle}</a></h5>
+                                            <p className="text-muted" style={{ display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', maxWidth: '100%' }}>{board.boardContent}</p>
+                                            <a className="text-muted readmore" 
+                                                style={{ cursor: 'pointer' }} 
+                                                onClick={() => boardDetailClick(board)}>
+                                                Read More <i className="uil uil-angle-right-b align-middle"></i>
+                                            </a>
+                                            {/* <button onClick={()=>{boardDetailClick(board)}}>더보기</button> */}
+                                       </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )):<div className="text-center" style={{fontWeight:'900'}}>검색결과가 없습니다.</div>}
+                    </div>
+                </div>
+                
+                <div className="col-12 mt-4">
+                <ul className="pagination justify-content-center mb-0">
+                    {page.prev && (
+                        <li className="page-item"><a className="page-link" style={{ cursor: 'pointer' }} onClick={()=>{ page.prev && axiosPageData(page.startPage-1)}} aria-label="Previous">Prev</a></li>
+                    )}
+                        {Array.from({ length: (page.endPage - page.startPage + 1) }, (_, i) => page.startPage + i).map(pageNum => (
+                        <li className={`page-item ${pageNum === page.pagingInfo.pageNum ? 'active' : ''}`} style={{ cursor: 'pointer' }} key={pageNum}><a className="page-link" onClick={() => {axiosPageData(pageNum)}}>{pageNum}</a></li>
+                        ))}
+                    {page.next && (
+                        <li className="page-item"><a style={{ cursor: 'pointer' }} className="page-link" onClick={()=>{ page.next && axiosPageData(page.endPage+1)}} aria-label="Next">Next</a></li>
+                    )}    
+                    
+                </ul>
+            </div>
+
+
+            </section>
+        </>
+    )
+}
+export default SearchBoardSection;
+~~~
