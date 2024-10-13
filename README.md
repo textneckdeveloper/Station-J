@@ -22,7 +22,7 @@
 &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
 <strong>API, 라이브러리 :</strong> Restful API (JSON), JPA, React<br><br><br><br><br><br><br><br>
 
-[ CODE ]<br><br>
+[ SPRING BOOT ]<br><br>
 
 ● Config Package<br><br>
 
@@ -1476,8 +1476,15 @@ public class VideoServiceImpe implements VideoService {
 8. 게시물 삭제
 
 <br>
+<hr>
+<br>
 
-● React - Archive<br><br>
+[ REACT ]<br><br>
+
+API와의 상호작용을 위해 Axios를 이용해 JSON 데이터를 송수신했습니다.<br>
+아래의 코드들은 React로 작성된 프로젝트의 일부분입니다.<br><br>
+
+● Archive<br><br>
 
 1. ArchiveBoardSection.js
 ~~~jsx
@@ -1714,7 +1721,7 @@ export default ArchiveDetailSection;
 
 <br>
 
-● React - Video<br><br>
+● Video<br><br>
 
 1. VideoBoardSection.js
 ~~~jsx
@@ -1931,7 +1938,7 @@ export default VideoDetailSection;
 
 <br>
 
-● React - Search<br><br>
+● Search<br><br>
 
 1. SearchBoardSection.js
 ~~~jsx
