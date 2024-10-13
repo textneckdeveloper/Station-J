@@ -45,6 +45,9 @@ public class WebMvcConfigurer implements org.springframework.web.servlet.config.
 }
 ~~~
 
+클라이언트가 웹 애플리케이션에서 /asset/**로 시작하는 경로에 접근할 때,<br>
+애플리케이션은 서버의 로컬 디스크에 있는 C:/asset/ 폴더의 파일을 정적 자원으로 제공합니다.
+
 <br>
 
 ● Dto Package<br><br>
@@ -79,6 +82,8 @@ public class BoardDTO {
 		
 }
 ~~~
+
+게시글과 관련된 데이터를 저장, 관리, 그리고 전송하기 위해 객체를 생성합니다.
 
 <br>
 
@@ -122,6 +127,9 @@ public class PageDTO {
 }
 ~~~
 
+게시판에 데이터가 많으면 페이지 번호를 표시하고,<br>
+사용자가 이전/다음 버튼을 통해 쉽게 다른 페이지로 이동할 수 있도록 하는 페이징 기능을 구현했습니다.
+
 <br>
 
 3. PagingInfo.java
@@ -144,6 +152,8 @@ public class PagingInfo {
 	
 }
 ~~~
+
+이 클래스는 페이징 처리에서 현재 몇 번째 페이지인지와 한 페이지에 몇 개의 데이터가 표시되는지를 관리합니다.
 
 <br>
 
@@ -207,6 +217,12 @@ public class Board extends BaseEntity {
 }
 ~~~
 
+이 클래스는 게시글 정보를 데이터베이스의 board 테이블과 매핑하여 관리하는 엔티티이며,<br>
+JPA를 통해 데이터베이스의 CRUD(생성, 읽기, 수정, 삭제) 연산을 쉽게 수행할 수 있도록 설계되었습니다.<br><br>
+
+section 필드는 다대일(Many-to-One) 관계를 설정합니다.<br>
+이 설정은 여러 개의 게시글(Board)이 하나의 섹션(Section)에 속할 수 있음을 의미합니다.
+
 <br>
 
 2. Section.java
@@ -249,6 +265,11 @@ public class Section {
 	
 }
 ~~~
+
+JPA를 사용하여 데이터베이스의 section 테이블과 매핑된 엔티티 클래스입니다.<br><br>
+
+Section 클래스는 게시글이 속할 섹션(카테고리)의 정보를 표현합니다.<br>
+이를 통해 게시글을 카테고리별로 분류하고 관리할 수 있습니다.
 
 <br>
 
@@ -296,6 +317,11 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 	
 }
 ~~~
+
+Spring Data JPA를 사용하여 Board 엔티티에 대한 데이터베이스 작업을 정의한 BoardRepository 인터페이스입니다.<br><br>
+
+이 인터페이스는 JpaRepository를 상속받아 기본 CRUD 기능을 제공하며,<br>
+추가적으로 다양한 사용자 정의 쿼리를 정의하고 있습니다.
 
 <br>
 
@@ -379,6 +405,9 @@ public class MainController {
 	
 }
 ~~~
+
+이 클래스는 메인 페이지에 대한 HTTP 요청을 처리하고,<br>
+사용자 인증 정보, CSRF 토큰, 게시판 검색 등의 기능을 제공합니다. 
 
 <br>
 
@@ -502,6 +531,13 @@ public class ArchiveController {
 }
 ~~~
 
+아카이브와 관련된 CRUD(Create, Read, Update, Delete) 기능을 처리하는 RESTful API의 컨트롤러입니다.<br><br>
+
+다양한 HTTP 메서드(GET, POST, PUT, DELETE)를 사용하여<br>
+아카이브 목록 조회, 연도별 목록 조회, 세부 정보 조회, 작성, 수정, 삭제 기능을 제공합니다.<br><br>
+
+ArchiveService를 통해 비즈니스 로직을 처리하고, 결과를 JSON 형식으로 클라이언트에 반환합니다.
+
 <br>
 
 3. VideoController.java
@@ -610,9 +646,21 @@ public class VideoController {
 }
 ~~~
 
+비디오와 관련된 CRUD(Create, Read, Update, Delete) 기능을 처리하는 RESTful API의 컨트롤러입니다.<br><br>
+
+다양한 HTTP 메서드(GET, POST, PUT, DELETE)를 사용하여<br>
+비디오 목록 조회, 세부 정보 조회, 작성, 수정, 삭제 기능을 제공합니다.<br><br>
+
+VideoService 통해 비즈니스 로직을 처리하고, 결과를 JSON 형식으로 클라이언트에 반환합니다.
+
 <br>
 
 ● Service Package<br><br>
+
+Service Class는 비즈니스 로직을 구현하기 위한 메서드를 정의합니다.<br>
+Service Interface는 애플리케이션의 구조를 명확하게 하고, 유지보수를 용이하게 합니다.<br><br>
+
+ServiceImpe Class는 인터페이스에서 정의된 메서드를 실제로 실행하는 역할을 합니다.<br><br>
 
 1. MainService.java
 ~~~java
@@ -756,6 +804,14 @@ public class MainServiceImpe implements MainService {
 	
 }
 ~~~
+
+<br>
+
+[ 주요 기능 ]<br><br>
+
+1. 게시물 검색
+2. 검색 된 게시물의 수를 반환하여 페이징을 구현
+3. 사이트 정보 집계
 
 <br>
 
@@ -1152,6 +1208,19 @@ public class ArchiveServiceImpe implements ArchiveService{
 
 <br>
 
+[ 주요 기능 ]<br><br>
+
+1. 특정 아카이브의 작성일을 조회하여 연도별로 카테고리화
+2. 아카이브 게시물 목록 조회
+3. 아카이브 게시물의 총 개수 조회
+4. 아카이브 게시물 세부 정보 조회
+5. 게시물 조회수 증가
+6. 게시물 작성
+7. 게시물 수정
+8. 게시물 삭제
+
+<br>
+
 3. VideoService.java
 ~~~java
 package com.green.service;
@@ -1393,3 +1462,15 @@ public class VideoServiceImpe implements VideoService {
 	
 }
 ~~~
+
+<br>
+
+[ 주요 기능 ]<br><br>
+
+1. 비디오 게시물 목록 조회
+2. 비디오 게시물의 총 개수 조회
+3. 비디오 세부 정보 조회
+4. 게시물 조회수 증가
+6. 게시물 작성
+7. 게시물 수정
+8. 게시물 삭제
